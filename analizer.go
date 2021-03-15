@@ -159,7 +159,7 @@ func (self *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Tim
 
 }
 
-func (self *Analyser) getSignals(itTickers []string) (rtSignals []Signal, roError error) {
+func (self *Analyser) GetSignals(itTickers []string) (rtSignals []Signal, roError error) {
 
 	for _, lvTicker := range itTickers {
 
