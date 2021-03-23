@@ -12,27 +12,26 @@ type Analyser struct {
 }
 
 type Profit struct {
-	Ticker         string
-	Text           string
-	Currency       string
-	QuantityBuy    float64
-	PriceBuy       float64
-	ValueBuy       float64
-	CommissionBuy  float64
-	QuantitySell   float64
-	PriceSell      float64
-	ValueSell      float64
-	CommissionSell float64
-	QuantityEnd    float64
-	PriceEnd       float64
-	ValueEnd       float64
-	DividentValue  float64
-	DividentTax    float64
-	CouponValue    float64
-	CouponTax      float64
-	TotalValue     float64
-	TotalPercent   float64
-	Operations     []tinvestclient.Operation
+	Ticker         string `json:"ticker"`
+	Text           string `json:"text"`
+	Currency       string `json:"currency"`
+	QuantityBuy    float64 `json:"quantityBuy"`
+	PriceBuy       float64 `json:"priceBuy"`
+	ValueBuy       float64 `json:"valueBuy"`
+	CommissionBuy  float64 `json:"commissionBuy"`
+	QuantitySell   float64 `json:"quantitySell"`
+	PriceSell      float64 `json:"priceSell"`
+	ValueSell      float64 `json:"valueSell"`
+	CommissionSell float64 `json:"commissionSell"`
+	QuantityEnd    float64 `json:"quantityEnd"`
+	PriceEnd       float64 `json:"priceEnd"`
+	ValueEnd       float64 `json:"valueEnd"`
+	DividentValue  float64 `json:"dividentValue"`
+	DividentTax    float64 `json:"dividentTax"`
+	CouponValue    float64 `json:"couponValue"`
+	CouponTax      float64 `json:"couponTax"`
+	TotalValue     float64 `json:"totalValue"`
+	TotalPercent   float64 `json:"totalPercent"`
 }
 
 type Signal struct {
@@ -50,30 +49,48 @@ func (self *Analyser) Init(ivToken string) {
 
 func (self *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Time) (rtProfit []Profit, roError error) {
 
-	ltOperations, roError := self.Client.GetOperations(ivTicker, ivFrom, ivTo)
+	lvFigi := ""
 
-	if roError != nil {
-		return
-	}
+	ltInstruments := make(map[string]tinvestclient.Instrument)
 
-	ltInstruments := mapOperations(&ltOperations)
+	if ivTicker == "" {
 
-	for lvFIGI, ltOperations := range ltInstruments {
+		ltInstruments, roError = self.GetInstruments()
 
-		time.Sleep(time.Second)
+		if roError != nil {
+			return
+		}
 
-		lsInstrument, loError := self.Client.GetInstrumentByFIGI(lvFIGI)
+	} else {
+
+		lsInstrument, loError := self.Client.GetInstrumentByTicker(ivTicker)
 
 		if loError != nil {
 			roError = loError
 			return
 		}
 
+		ltInstruments[lsInstrument.FIGI] = lsInstrument
+
+		lvFigi = lsInstrument.FIGI
+
+	}
+
+	ltOperationsAll, roError := self.GetOperations(lvFigi, ivFrom, ivTo)
+
+	if roError != nil {
+		return
+	}
+
+	for lvFIGI, ltOperations := range ltOperationsAll {
+
+		lsInstrument := ltInstruments[lvFIGI]
+
 		if lsInstrument.Type == tinvestclient.InstumentTypeCurrency {
 			continue
 		}
 
-		ltCandles, loError := self.Client.GetCandles(lsInstrument.Ticker, tinvestclient.IntervalDay, ivTo.AddDate(0, 0, -15), ivTo)
+		ltCandles, loError := self.Client.GetCandles(lsInstrument.FIGI, tinvestclient.IntervalDay, ivTo.AddDate(0, 0, -15), ivTo)
 
 		if loError != nil {
 			roError = loError
@@ -85,7 +102,6 @@ func (self *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Tim
 		lsProfit.Ticker = lsInstrument.Ticker
 		lsProfit.Text = lsInstrument.Text
 		lsProfit.Currency = lsInstrument.Currency
-		lsProfit.Operations = ltOperations
 
 		for _, lsOperation := range ltOperations {
 
@@ -233,6 +249,50 @@ func (self *Analyser) GetSignals(itTickers []string) (rtSignals []Signal, roErro
 		}
 
 		rtSignals = append(rtSignals, lsSignal)
+
+	}
+
+	return
+
+}
+
+func (self *Analyser) GetInstruments() (rtInstruments map[string]tinvestclient.Instrument, roError error) {
+
+	ltInstruments, roError := self.Client.GetInstruments()
+
+	if roError != nil {
+		return
+	}
+
+	rtInstruments = make(map[string]tinvestclient.Instrument)
+
+	for _, lsInstrument := range ltInstruments {
+
+		rtInstruments[lsInstrument.FIGI] = lsInstrument
+
+	}
+
+	return
+
+}
+
+func (self *Analyser) GetOperations(ivFIGI string, ivFrom time.Time, ivTo time.Time) (rtOperations map[string][]tinvestclient.Operation, roError error) {
+
+	ltOperations, roError := self.Client.GetOperations(ivFIGI, ivFrom, ivTo)
+
+	if roError != nil {
+		return
+	}
+
+	rtOperations = make(map[string][]tinvestclient.Operation)
+
+	for _, lsOperation := range ltOperations {
+
+		ltOperations, _ := rtOperations[lsOperation.FIGI]
+
+		ltOperations = append(ltOperations, lsOperation)
+
+		rtOperations[lsOperation.FIGI] = ltOperations
 
 	}
 
@@ -616,24 +676,6 @@ func isRSISell(itCandles []tinvestclient.Candle) (rvIs bool) {
 
 	if loRSIIndincator.Calculate(len(itCandles)-3).Float() >= 70 {
 		rvIs = true
-	}
-
-	return
-
-}
-
-func mapOperations(itOperations *[]tinvestclient.Operation) (rtOperations map[string][]tinvestclient.Operation) {
-
-	rtOperations = make(map[string][]tinvestclient.Operation)
-
-	for _, lsOpearion := range *itOperations {
-
-		ltOperations, _ := rtOperations[lsOpearion.FIGI]
-
-		ltOperations = append(ltOperations, lsOpearion)
-
-		rtOperations[lsOpearion.FIGI] = ltOperations
-
 	}
 
 	return
