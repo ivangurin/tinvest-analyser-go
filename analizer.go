@@ -165,7 +165,9 @@ func (self *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Tim
 			lsProfit.DividendValue - lsProfit.DividendTax +
 			lsProfit.CouponValue - lsProfit.CouponTax
 
-		lsProfit.TotalPercent = lsProfit.TotalValue / lsProfit.ValueBuy * 100.
+		if lsProfit.ValueBuy != 0 {
+			lsProfit.TotalPercent = lsProfit.TotalValue / lsProfit.ValueBuy * 100.
+		}
 
 		rtProfit = append(rtProfit, lsProfit)
 
