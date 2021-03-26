@@ -26,8 +26,8 @@ type Profit struct {
 	QuantityEnd    float64 `json:"quantityEnd"`
 	PriceEnd       float64 `json:"priceEnd"`
 	ValueEnd       float64 `json:"valueEnd"`
-	DividendValue  float64 `json:"dividentValue"`
-	DividendTax    float64 `json:"dividentTax"`
+	DividendValue  float64 `json:"dividendValue"`
+	DividendTax    float64 `json:"dividendTax"`
 	CouponValue    float64 `json:"couponValue"`
 	CouponTax      float64 `json:"couponTax"`
 	TotalValue     float64 `json:"totalValue"`
