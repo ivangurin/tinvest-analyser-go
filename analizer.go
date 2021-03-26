@@ -26,8 +26,8 @@ type Profit struct {
 	QuantityEnd    float64 `json:"quantityEnd"`
 	PriceEnd       float64 `json:"priceEnd"`
 	ValueEnd       float64 `json:"valueEnd"`
-	DividentValue  float64 `json:"dividentValue"`
-	DividentTax    float64 `json:"dividentTax"`
+	DividendValue  float64 `json:"dividentValue"`
+	DividendTax    float64 `json:"dividentTax"`
 	CouponValue    float64 `json:"couponValue"`
 	CouponTax      float64 `json:"couponTax"`
 	TotalValue     float64 `json:"totalValue"`
@@ -126,10 +126,10 @@ func (self *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Tim
 				lsProfit.CommissionSell += lsOperation.Commission
 
 			case tinvestclient.OperationDividend:
-				lsProfit.DividentValue += lsOperation.Value
+				lsProfit.DividendValue += lsOperation.Value
 
 			case tinvestclient.OperationTaxDividend:
-				lsProfit.DividentTax += lsOperation.Value
+				lsProfit.DividendTax += lsOperation.Value
 
 			case tinvestclient.OperationCoupon:
 				lsProfit.CouponValue += lsOperation.Value
@@ -162,7 +162,7 @@ func (self *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Tim
 			lsProfit.QuantitySell*lsProfit.PriceBuy -
 			lsProfit.CommissionBuy -
 			lsProfit.CommissionSell +
-			lsProfit.DividentValue - lsProfit.DividentTax +
+			lsProfit.DividendValue - lsProfit.DividendTax +
 			lsProfit.CouponValue - lsProfit.CouponTax
 
 		lsProfit.TotalPercent = lsProfit.TotalValue / lsProfit.ValueBuy * 100.
