@@ -1,10 +1,11 @@
 package tinvestanalyser
 
 import (
-	"github.com/ivangurin/tinvest-client-go"
+	"time"
+
+	tinvestclient "github.com/ivangurin/tinvest-client-go"
 	"github.com/sdcoffey/big"
 	"github.com/sdcoffey/techan"
-	"time"
 )
 
 type Analyser struct {
@@ -12,9 +13,9 @@ type Analyser struct {
 }
 
 type Profit struct {
-	Ticker         string `json:"ticker"`
-	Text           string `json:"text"`
-	Currency       string `json:"currency"`
+	Ticker         string  `json:"ticker"`
+	Text           string  `json:"text"`
+	Currency       string  `json:"currency"`
 	QuantityBuy    float64 `json:"quantityBuy"`
 	PriceBuy       float64 `json:"priceBuy"`
 	ValueBuy       float64 `json:"valueBuy"`
@@ -289,6 +290,10 @@ func (self *Analyser) GetOperations(ivFIGI string, ivFrom time.Time, ivTo time.T
 	rtOperations = make(map[string][]tinvestclient.Operation)
 
 	for _, lsOperation := range ltOperations {
+
+		if lsOperation.FIGI == "" {
+			continue
+		}
 
 		ltOperations, _ := rtOperations[lsOperation.FIGI]
 
