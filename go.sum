@@ -7,6 +7,8 @@ github.com/ivangurin/tinvest-client-go v0.0.0-20210312091405-ec6160152a4f h1:VDQ
 github.com/ivangurin/tinvest-client-go v0.0.0-20210312091405-ec6160152a4f/go.mod h1:sqP4JqysfObhLBSzvdL/XGmupx2PSOAGKk/SjQbugr0=
 github.com/ivangurin/tinvest-client-go v0.0.0-20210323123106-d2ba38e8fe4a h1:4U715GB+QLF62fkskiPGCNU/B3+zDItOxKPMaJnU7m0=
 github.com/ivangurin/tinvest-client-go v0.0.0-20210323123106-d2ba38e8fe4a/go.mod h1:sqP4JqysfObhLBSzvdL/XGmupx2PSOAGKk/SjQbugr0=
+github.com/ivangurin/tinvest-client-go v0.0.0-20210403112149-097e4ab0c103 h1:pFhzYDohG8/uTOxz7t8ZE89JcjidWV2YgrPNCsuZtkc=
+github.com/ivangurin/tinvest-client-go v0.0.0-20210403112149-097e4ab0c103/go.mod h1:sqP4JqysfObhLBSzvdL/XGmupx2PSOAGKk/SjQbugr0=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
