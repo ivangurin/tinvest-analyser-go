@@ -12,6 +12,23 @@ type Analyser struct {
 	Client tinvestclient.Client
 }
 
+type Totals struct {
+	PayIn           float64
+	PayOut          float64
+	ValueBuy        float64
+	ValueSell       float64
+	ValueTotal      float64
+	CommissionBuy   float64
+	CommissionSell  float64
+	CommissionTotal float64
+	DividendValue   float64
+	DividendTax     float64
+	CouponValue     float64
+	CouponTax       float64
+	TotalValue      float64
+	TotalPercent    float64
+}
+
 type Profit struct {
 	Ticker         string  `json:"ticker"`
 	Text           string  `json:"text"`
@@ -40,15 +57,37 @@ type Signal struct {
 	Indicators []string
 }
 
-func (self *Analyser) Init(ivToken string) {
+func (a *Analyser) Init(ivToken string) {
 
-	self.Client = tinvestclient.Client{}
+	a.Client = tinvestclient.Client{}
 
-	self.Client.Init(ivToken)
+	a.Client.Init(ivToken)
 
 }
 
-func (self *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Time) (rtProfit []Profit, roError error) {
+func (a *Analyser) GetTotals(ivFrom time.Time, ivTo time.Time) (rsTotals Totals, roError error) {
+
+	// ltOperations, loError := a.Client.GetOperations("", ivFrom, ivTo)
+
+	// if loError != nil {
+	// 	roError = loError
+	// 	return
+	// }
+
+	// for _, lsOperation := range ltOperations {
+
+	// 	switch lsOperation.Type {
+	// 	case tinvestclient.OperationPayIn:
+
+	// 	}
+
+	// }
+
+	return
+
+}
+
+func (a *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Time) (rtProfit []Profit, roError error) {
 
 	lvFigi := ""
 
@@ -56,7 +95,7 @@ func (self *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Tim
 
 	if ivTicker == "" {
 
-		ltInstruments, roError = self.GetInstruments()
+		ltInstruments, roError = a.GetInstruments()
 
 		if roError != nil {
 			return
@@ -64,7 +103,7 @@ func (self *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Tim
 
 	} else {
 
-		lsInstrument, loError := self.Client.GetInstrumentByTicker(ivTicker)
+		lsInstrument, loError := a.Client.GetInstrumentByTicker(ivTicker)
 
 		if loError != nil {
 			roError = loError
@@ -77,7 +116,7 @@ func (self *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Tim
 
 	}
 
-	ltOperationsAll, roError := self.GetOperations(lvFigi, ivFrom, ivTo)
+	ltOperationsAll, roError := a.GetOperations(lvFigi, ivFrom, ivTo)
 
 	if roError != nil {
 		return
@@ -91,7 +130,7 @@ func (self *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Tim
 			continue
 		}
 
-		ltCandles, loError := self.Client.GetCandles(lsInstrument.FIGI, tinvestclient.IntervalDay, ivTo.AddDate(0, 0, -15), ivTo)
+		ltCandles, loError := a.Client.GetCandles(lsInstrument.FIGI, tinvestclient.IntervalDay, ivTo.AddDate(0, 0, -15), ivTo)
 
 		if loError != nil {
 			roError = loError
@@ -109,12 +148,6 @@ func (self *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Tim
 			switch lsOperation.Type {
 
 			case tinvestclient.OperationBuy:
-
-				lsProfit.QuantityBuy += lsOperation.Quantity
-				lsProfit.ValueBuy += lsOperation.Value
-				lsProfit.CommissionBuy += lsOperation.Commission
-
-			case tinvestclient.OperationBuyCard:
 
 				lsProfit.QuantityBuy += lsOperation.Quantity
 				lsProfit.ValueBuy += lsOperation.Value
@@ -178,25 +211,37 @@ func (self *Analyser) GetProfit(ivTicker string, ivFrom time.Time, ivTo time.Tim
 
 }
 
-func (self *Analyser) GetSignals(itTickers []string) (rtSignals []Signal, roError error) {
+func (a *Analyser) GetSignals(itTickers []string) (rtSignals []Signal, roError error) {
+
+	ltInstruments, roError := a.GetInstruments()
+
+	if roError != nil {
+		return
+	}
 
 	for _, lvTicker := range itTickers {
 
 		time.Sleep(100 * time.Millisecond)
 
-		ltCandles, loError := self.Client.GetCandles(lvTicker, tinvestclient.IntervalDay, time.Now().AddDate(0, 0, -60), time.Now())
+		lsInstrument, lvExists := ltInstruments[lvTicker]
+
+		if !lvExists {
+			continue
+		}
+
+		ltCandles, loError := a.Client.GetCandles(lsInstrument.FIGI, tinvestclient.IntervalDay, time.Now().AddDate(0, 0, -60), time.Now())
 
 		if loError != nil {
 			roError = loError
 			return
 		}
 
-		lsSignal := Signal{}
-
-		lsSignal.Ticker = lvTicker
-
 		if len(ltCandles) == 0 {
 			continue
+		}
+
+		lsSignal := Signal{
+			Ticker: lsInstrument.Ticker,
 		}
 
 		if isBullishGAP(ltCandles) {
@@ -259,9 +304,9 @@ func (self *Analyser) GetSignals(itTickers []string) (rtSignals []Signal, roErro
 
 }
 
-func (self *Analyser) GetInstruments() (rtInstruments map[string]tinvestclient.Instrument, roError error) {
+func (a *Analyser) GetInstruments() (rtInstruments map[string]tinvestclient.Instrument, roError error) {
 
-	ltInstruments, roError := self.Client.GetInstruments()
+	ltInstruments, roError := a.Client.GetInstruments()
 
 	if roError != nil {
 		return
@@ -270,18 +315,17 @@ func (self *Analyser) GetInstruments() (rtInstruments map[string]tinvestclient.I
 	rtInstruments = make(map[string]tinvestclient.Instrument)
 
 	for _, lsInstrument := range ltInstruments {
-
 		rtInstruments[lsInstrument.FIGI] = lsInstrument
-
+		rtInstruments[lsInstrument.Ticker] = lsInstrument
 	}
 
 	return
 
 }
 
-func (self *Analyser) GetOperations(ivFIGI string, ivFrom time.Time, ivTo time.Time) (rtOperations map[string][]tinvestclient.Operation, roError error) {
+func (a *Analyser) GetOperations(ivFIGI string, ivFrom time.Time, ivTo time.Time) (rtOperations map[string][]tinvestclient.Operation, roError error) {
 
-	ltOperations, roError := self.Client.GetOperations(ivFIGI, ivFrom, ivTo)
+	ltOperations, roError := a.Client.GetOperations(ivFIGI, ivFrom, ivTo)
 
 	if roError != nil {
 		return
@@ -295,7 +339,7 @@ func (self *Analyser) GetOperations(ivFIGI string, ivFrom time.Time, ivTo time.T
 			continue
 		}
 
-		ltOperations, _ := rtOperations[lsOperation.FIGI]
+		ltOperations := rtOperations[lsOperation.FIGI]
 
 		ltOperations = append(ltOperations, lsOperation)
 
@@ -557,12 +601,13 @@ func isMACDBuy(itCandles []tinvestclient.Candle) (rvIs bool) {
 
 	for _, lsCandle := range itCandles {
 
-		loCandle := techan.NewCandle(techan.TimePeriod{lsCandle.Time, lsCandle.Time})
+		loCandle := techan.NewCandle(techan.TimePeriod{Start: lsCandle.Time, End: lsCandle.Time})
 
 		loCandle.OpenPrice = big.NewDecimal(lsCandle.Open)
 		loCandle.ClosePrice = big.NewDecimal(lsCandle.Close)
 		loCandle.MaxPrice = big.NewDecimal(lsCandle.High)
 		loCandle.MinPrice = big.NewDecimal(lsCandle.Low)
+		loCandle.Volume = big.NewDecimal(lsCandle.Volume)
 
 		loSeries.AddCandle(loCandle)
 
@@ -579,6 +624,8 @@ func isMACDBuy(itCandles []tinvestclient.Candle) (rvIs bool) {
 	lvPrevValue3 := loMACDHistogram.Calculate(len(itCandles) - 3).Float()
 
 	if lvPrevValue1 < 0 &&
+		lvPrevValue2 < 0 &&
+		lvPrevValue3 < 0 &&
 		lvPrevValue1 > lvPrevValue2 &&
 		lvPrevValue3 > lvPrevValue2 {
 		rvIs = true
@@ -596,12 +643,13 @@ func isMACDSell(itCandles []tinvestclient.Candle) (rvIs bool) {
 
 	for _, lsCandle := range itCandles {
 
-		loCandle := techan.NewCandle(techan.TimePeriod{lsCandle.Time, lsCandle.Time})
+		loCandle := techan.NewCandle(techan.TimePeriod{Start: lsCandle.Time, End: lsCandle.Time})
 
 		loCandle.OpenPrice = big.NewDecimal(lsCandle.Open)
 		loCandle.ClosePrice = big.NewDecimal(lsCandle.Close)
 		loCandle.MaxPrice = big.NewDecimal(lsCandle.High)
 		loCandle.MinPrice = big.NewDecimal(lsCandle.Low)
+		loCandle.Volume = big.NewDecimal(lsCandle.Volume)
 
 		loSeries.AddCandle(loCandle)
 
@@ -617,7 +665,9 @@ func isMACDSell(itCandles []tinvestclient.Candle) (rvIs bool) {
 	lvPrevValue2 := loMACDHistogram.Calculate(len(itCandles) - 2).Float()
 	lvPrevValue3 := loMACDHistogram.Calculate(len(itCandles) - 3).Float()
 
-	if lvPrevValue1 >= 0 &&
+	if lvPrevValue1 > 0 &&
+		lvPrevValue2 > 0 &&
+		lvPrevValue3 > 0 &&
 		lvPrevValue1 < lvPrevValue2 &&
 		lvPrevValue3 < lvPrevValue2 {
 		rvIs = true
@@ -635,12 +685,13 @@ func isRSIBuy(itCandles []tinvestclient.Candle) (rvIs bool) {
 
 	for _, lsCandle := range itCandles {
 
-		loCandle := techan.NewCandle(techan.TimePeriod{lsCandle.Time, lsCandle.Time})
+		loCandle := techan.NewCandle(techan.TimePeriod{Start: lsCandle.Time, End: lsCandle.Time})
 
 		loCandle.OpenPrice = big.NewDecimal(lsCandle.Open)
 		loCandle.ClosePrice = big.NewDecimal(lsCandle.Close)
 		loCandle.MaxPrice = big.NewDecimal(lsCandle.High)
 		loCandle.MinPrice = big.NewDecimal(lsCandle.Low)
+		loCandle.Volume = big.NewDecimal(lsCandle.Volume)
 
 		loSeries.AddCandle(loCandle)
 
@@ -650,7 +701,7 @@ func isRSIBuy(itCandles []tinvestclient.Candle) (rvIs bool) {
 
 	loRSIIndincator := techan.NewRelativeStrengthIndexIndicator(loClosePriceIndicator, 14)
 
-	if loRSIIndincator.Calculate(len(itCandles)-3).Float() <= 30 {
+	if loRSIIndincator.Calculate(len(itCandles)-1).Float() <= 30 {
 		rvIs = true
 	}
 
@@ -666,12 +717,13 @@ func isRSISell(itCandles []tinvestclient.Candle) (rvIs bool) {
 
 	for _, lsCandle := range itCandles {
 
-		loCandle := techan.NewCandle(techan.TimePeriod{lsCandle.Time, lsCandle.Time})
+		loCandle := techan.NewCandle(techan.TimePeriod{Start: lsCandle.Time, End: lsCandle.Time})
 
 		loCandle.OpenPrice = big.NewDecimal(lsCandle.Open)
 		loCandle.ClosePrice = big.NewDecimal(lsCandle.Close)
 		loCandle.MaxPrice = big.NewDecimal(lsCandle.High)
 		loCandle.MinPrice = big.NewDecimal(lsCandle.Low)
+		loCandle.Volume = big.NewDecimal(lsCandle.Volume)
 
 		loSeries.AddCandle(loCandle)
 
@@ -681,7 +733,7 @@ func isRSISell(itCandles []tinvestclient.Candle) (rvIs bool) {
 
 	loRSIIndincator := techan.NewRelativeStrengthIndexIndicator(loClosePriceIndicator, 14)
 
-	if loRSIIndincator.Calculate(len(itCandles)-3).Float() >= 70 {
+	if loRSIIndincator.Calculate(len(itCandles)-1).Float() >= 70 {
 		rvIs = true
 	}
 
